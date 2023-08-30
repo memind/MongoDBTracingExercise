@@ -1,6 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Hangfire;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using OpenTracing;
+using System;
+using System.Reflection.Metadata.Ecma335;
 
 namespace APITest.Controllers
 {
@@ -31,6 +34,11 @@ namespace APITest.Controllers
         [HttpGet("/getGet")]
         public string GetGet()
         {
+            var id = BackgroundJob.Enqueue(() => Console.WriteLine("Background Job! Triggered when clicked."));
+            BackgroundJob.ContinueJobWith(id, () => Console.WriteLine("Continuations Job! Triggered after background job!"));
+            RecurringJob.AddOrUpdate(() => Console.WriteLine("Recurring Job! Triggered minutely."), Cron.Minutely());
+            BackgroundJob.Schedule(() => Console.WriteLine("Scheduled/Delayed Job! Triggered after 5 seconds from click!"), TimeSpan.FromSeconds(5));
+
             return "deneme";
         }
     }
