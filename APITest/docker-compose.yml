@@ -1,0 +1,47 @@
+﻿version: '3.4'
+
+services:
+  prometheus:
+    image: ubuntu/prometheus
+    container_name: prometheus
+    ports:
+      - "30090:9090"
+    environment:
+      - TZ=UTC+3
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ../../API/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "30091:3000"
+    volumes:
+      - ./grafana-data/data:/var/lib/grafana 
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.22
+    container_name: jaeger
+    ports:
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "14268:14268"
+      - "14250:14250"
+      - "16686:16686"
+      - "5778:5778"
+
+  consul:
+    image: consul:1.15.4
+    container_name: consul
+    ports:
+      - "8500:8500"
+      - "8600:8600/tcp"
+      - "8600:8600/udp"
+    networks:
+      - consul
+    command: ["consul", "agent", "-server", "-ui", "-bind", "0.0.0.0", "-client", "0.0.0.0", "-data-dir", "/consul/data", "-config-dir", "/consul/config", "-bootstrap", "-datacenter", "docker", ]
+
+networks:
+  consul:
+    driver: bridge

@@ -21,31 +21,33 @@ using Jaeger;
 using Jaeger.Samplers;
 using OpenTracing.Contrib.NetCore.Configuration;
 using Jaeger.Senders.Thrift;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using App.Metrics.AspNetCore;
+using Microsoft.AspNetCore.Mvc;
+using App.Metrics.Formatters.Prometheus;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
-
+builder.Services.AddCors(opt => opt.AddDefaultPolicy(policy => policy.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin()));
 
 builder.Services.AddApplicationServices();
 builder.Services.AddPersistanceServices(builder.Configuration);
 
-builder.Services.AddSingleton<IConsulClient>(consul => new ConsulClient(consulConfig => ////////////
+#region Consul
+builder.Services.AddSingleton<IConsulClient>(consul => new ConsulClient(consulConfig =>
 {
     consulConfig.Address = new Uri(builder.Configuration["Consul:Host"]);
 }, null, handlerOverride =>
 {
-    //disable proxy of httpclienthandler  
     handlerOverride.Proxy = null;
     handlerOverride.UseProxy = false;
 }));
-
+builder.Services.Configure<WorkoutConfiguration>(builder.Configuration.GetSection("Workout"));
+builder.Services.AddSingleton<IHostedService, ConsulRegisterService>();
+#endregion
 
 #region OpenTelemetry
-
-// Docker'da calistir:
-// docker run -d -p 6831:6831 udp -p 6832:6832 udp -p 14268:14268 -p 14250:14250 -p 16686:16686 -p 5778:5778 --name jaeger jaegertracing/all-in-one:1.22
-
 builder.Services.AddOpenTracing();
-// Adds the Jaeger Tracer.
 builder.Services.AddSingleton<ITracer>(sp =>
 {
     var serviceName = sp.GetRequiredService<IWebHostEnvironment>().ApplicationName;
@@ -53,9 +55,7 @@ builder.Services.AddSingleton<ITracer>(sp =>
     var reporter = new RemoteReporter.Builder().WithLoggerFactory(loggerFactory).WithSender(new UdpSender())
         .Build();
     var tracer = new Tracer.Builder(serviceName)
-        // The constant sampler reports every span.
         .WithSampler(new ConstSampler(true))
-        // LoggingReporter prints every reported span to the logging framework.
         .WithReporter(reporter)
         .Build();
     return tracer;
@@ -66,10 +66,34 @@ builder.Services.Configure<HttpHandlerDiagnosticOptions>(options =>
         request => $"{request.Method.Method}: {request?.RequestUri?.AbsoluteUri}");
 #endregion
 
-builder.Services.AddHttpClient();
+#region Appmetrics - Prometheus - Grafana
+builder.Services.Configure<KestrelServerOptions>(options =>
+{
+    options.AllowSynchronousIO = true;
+});
 
-builder.Services.Configure<MenuConfiguration>(builder.Configuration.GetSection("Menu")); ///////////////
-builder.Services.AddSingleton<IHostedService, ConsulRegisterService>(); /////////////////////
+builder.Services.Configure<IISServerOptions>(options =>
+{
+    options.AllowSynchronousIO = true;
+});
+
+builder.Services.AddMetrics();
+
+builder.Host.UseMetricsWebTracking()
+                .UseMetrics(options =>
+                {
+                    options.EndpointOptions = endpointsOptions =>
+                    {
+                        endpointsOptions.MetricsTextEndpointOutputFormatter = new MetricsPrometheusTextOutputFormatter();
+                        endpointsOptions.MetricsEndpointOutputFormatter = new MetricsPrometheusProtobufOutputFormatter();
+                        endpointsOptions.EnvironmentInfoEndpointEnabled = false;
+                    };
+                });
+
+builder.Services.AddMvcCore().AddMetricsCore();
+#endregion
+
+builder.Services.AddHttpClient();
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -83,6 +107,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+#region AppMetrics - Prometheus - Grafana
+app.UseRouting();
+app.UseHttpMetrics();
+app.MapMetrics();
+#endregion
+
+app.UseCors();
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();

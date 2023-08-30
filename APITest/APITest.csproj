@@ -7,10 +7,23 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="1\**" />
+    <Content Remove="1\**" />
+    <EmbeddedResource Remove="1\**" />
+    <None Remove="1\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="App.Metrics.AspNetCore" Version="4.4.0-preview.0.4" />
+    <PackageReference Include="App.Metrics.AspNetCore.Endpoints" Version="4.4.0-preview.0.4" />
+    <PackageReference Include="App.Metrics.AspNetCore.Mvc" Version="4.3.0" />
+    <PackageReference Include="App.Metrics.AspNetCore.Tracking" Version="4.4.0-preview.0.4" />
+    <PackageReference Include="App.Metrics.Formatters.Prometheus" Version="4.3.0" />
     <PackageReference Include="Consul" Version="1.6.10.9" />
     <PackageReference Include="Jaeger" Version="1.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.4" />
     <PackageReference Include="OpenTracing.Contrib.NetCore" Version="0.9.0" />
+    <PackageReference Include="prometheus-net.AspNetCore" Version="8.0.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
   </ItemGroup>
 
