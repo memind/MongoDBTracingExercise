@@ -1,8 +1,11 @@
 ﻿using Application.Abstractions.Services;
+using Application.Repositories;
+using Application.Repositories.EntityForDapperRepositories;
 using Application.Repositories.ExerciseRepositories;
 using Application.Repositories.WorkoutRepositories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Persistance.Concretes.Repositories.EntityForDapperRepositories;
 using Persistance.Concretes.Repositories.ExerciseRepositories;
 using Persistance.Concretes.Repositories.WorkoutRepositories;
 using Persistance.Concretes.Services;
@@ -24,9 +27,12 @@ namespace Persistance
             
             services.AddScoped<IExerciseReadRepository, ExerciseReadRepository>();
             services.AddScoped<IExerciseWriteRepository, ExerciseWriteRepository>();
-            
+
+            services.AddScoped<IEntityForDapperRepository, EntityForDapperRepository>();
+
             services.AddScoped<IWorkoutService, WorkoutService>();
             services.AddScoped<IExerciseService, ExerciseService>();
+            services.AddScoped<IEntityForDapperService, EntityForDapperService>();
 
             return services;
         }

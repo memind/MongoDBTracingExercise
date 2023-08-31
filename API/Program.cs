@@ -33,64 +33,66 @@ builder.Services.AddCors(opt => opt.AddDefaultPolicy(policy => policy.AllowAnyHe
 builder.Services.AddApplicationServices();
 builder.Services.AddPersistanceServices(builder.Configuration);
 
-#region Consul
-builder.Services.AddSingleton<IConsulClient>(consul => new ConsulClient(consulConfig =>
-{
-    consulConfig.Address = new Uri(builder.Configuration["Consul:Host"]);
-}, null, handlerOverride =>
-{
-    handlerOverride.Proxy = null;
-    handlerOverride.UseProxy = false;
-}));
-builder.Services.Configure<WorkoutConfiguration>(builder.Configuration.GetSection("Workout"));
-builder.Services.AddSingleton<IHostedService, ConsulRegisterService>();
-#endregion
+#region Services
+    //#region Consul
+    //    builder.Services.AddSingleton<IConsulClient>(consul => new ConsulClient(consulConfig =>
+    //    {
+    //        consulConfig.Address = new Uri(builder.Configuration["Consul:Host"]);
+    //    }, null, handlerOverride =>
+    //    {
+    //        handlerOverride.Proxy = null;
+    //        handlerOverride.UseProxy = false;
+    //    }));
+    //    builder.Services.Configure<WorkoutConfiguration>(builder.Configuration.GetSection("Workout"));
+    //    builder.Services.AddSingleton<IHostedService, ConsulRegisterService>();
+    //#endregion
 
-#region OpenTelemetry
-builder.Services.AddOpenTracing();
-builder.Services.AddSingleton<ITracer>(sp =>
-{
-    var serviceName = sp.GetRequiredService<IWebHostEnvironment>().ApplicationName;
-    var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
-    var reporter = new RemoteReporter.Builder().WithLoggerFactory(loggerFactory).WithSender(new UdpSender())
-        .Build();
-    var tracer = new Tracer.Builder(serviceName)
-        .WithSampler(new ConstSampler(true))
-        .WithReporter(reporter)
-        .Build();
-    return tracer;
-});
+    //#region OpenTelemetry
+    //    builder.Services.AddOpenTracing();
+    //    builder.Services.AddSingleton<ITracer>(sp =>
+    //    {
+    //        var serviceName = sp.GetRequiredService<IWebHostEnvironment>().ApplicationName;
+    //        var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
+    //        var reporter = new RemoteReporter.Builder().WithLoggerFactory(loggerFactory).WithSender(new UdpSender())
+    //            .Build();
+    //        var tracer = new Tracer.Builder(serviceName)
+    //            .WithSampler(new ConstSampler(true))
+    //            .WithReporter(reporter)
+    //            .Build();
+    //        return tracer;
+    //    });
 
-builder.Services.Configure<HttpHandlerDiagnosticOptions>(options =>
-    options.OperationNameResolver =
-        request => $"{request.Method.Method}: {request?.RequestUri?.AbsoluteUri}");
-#endregion
+    //    builder.Services.Configure<HttpHandlerDiagnosticOptions>(options =>
+    //        options.OperationNameResolver =
+    //            request => $"{request.Method.Method}: {request?.RequestUri?.AbsoluteUri}");
+    //#endregion
 
-#region Appmetrics - Prometheus - Grafana
-builder.Services.Configure<KestrelServerOptions>(options =>
-{
-    options.AllowSynchronousIO = true;
-});
-
-builder.Services.Configure<IISServerOptions>(options =>
-{
-    options.AllowSynchronousIO = true;
-});
-
-builder.Services.AddMetrics();
-
-builder.Host.UseMetricsWebTracking()
-                .UseMetrics(options =>
-                {
-                    options.EndpointOptions = endpointsOptions =>
-                    {
-                        endpointsOptions.MetricsTextEndpointOutputFormatter = new MetricsPrometheusTextOutputFormatter();
-                        endpointsOptions.MetricsEndpointOutputFormatter = new MetricsPrometheusProtobufOutputFormatter();
-                        endpointsOptions.EnvironmentInfoEndpointEnabled = false;
-                    };
-                });
-
-builder.Services.AddMvcCore().AddMetricsCore();
+    //#region Appmetrics - Prometheus - Grafana
+    //    builder.Services.Configure<KestrelServerOptions>(options =>
+    //    {
+    //        options.AllowSynchronousIO = true;
+    //    });
+        
+    //    builder.Services.Configure<IISServerOptions>(options =>
+    //    {
+    //        options.AllowSynchronousIO = true;
+    //    });
+        
+    //    builder.Services.AddMetrics();
+        
+    //    builder.Host.UseMetricsWebTracking()
+    //                    .UseMetrics(options =>
+    //                    {
+    //                        options.EndpointOptions = endpointsOptions =>
+    //                        {
+    //                            endpointsOptions.MetricsTextEndpointOutputFormatter = new MetricsPrometheusTextOutputFormatter();
+    //                            endpointsOptions.MetricsEndpointOutputFormatter = new MetricsPrometheusProtobufOutputFormatter();
+    //                            endpointsOptions.EnvironmentInfoEndpointEnabled = false;
+    //                        };
+    //                    });
+        
+    //    builder.Services.AddMvcCore().AddMetricsCore();
+    //#endregion
 #endregion
 
 builder.Services.AddHttpClient();
@@ -108,9 +110,9 @@ if (app.Environment.IsDevelopment())
 }
 
 #region AppMetrics - Prometheus - Grafana
-app.UseRouting();
-app.UseHttpMetrics();
-app.MapMetrics();
+//app.UseRouting();
+//app.UseHttpMetrics();
+//app.MapMetrics();
 #endregion
 
 app.UseCors();
